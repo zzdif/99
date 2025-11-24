@@ -10,9 +10,17 @@ local Point = geo.Point
 --- @class _99Options
 --- @field logger LoggerOptions?
 
+local _99_settings = {
+    fill_in_function = "fill in the function.  dont change the function signature. do not edit anything outside of this function.  prioritize using internal functions for work that has already been done.  do not edit anything but this function."
+}
+
+local function get_file_information(buffer)
+    local full_path = vim.fn.expand("%:p")
+    return full_path
+end
+
 --- @class _99
-local _99 = {}
-_99.__index = _99
+local _99 = { }
 
 function _99.fill_in_function()
 	local ts = editor.treesitter

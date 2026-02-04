@@ -22,7 +22,6 @@ local fn_call_query = "99-fn-call"
 --- @param buffer number
 ---@param lang string
 local function tree_root(buffer, lang)
-  -- Load the parser and the query.
   local ok, parser = pcall(vim.treesitter.get_parser, buffer, lang)
   if not ok then
     return nil
@@ -147,10 +146,10 @@ function M.containing_function(context, cursor)
   local lang = context.file_type
   local logger = context and context.logger:set_area("treesitter") or Logger
 
-  logger:error("loading lang", "buffer", buffer, "lang", lang)
+  logger:debug("loading lang", "buffer", buffer, "lang", lang)
   local root = tree_root(buffer, lang)
   if not root then
-    logger:debug("LSP: could not find tree root")
+    logger:debug("could not find tree root")
     return nil
   end
 

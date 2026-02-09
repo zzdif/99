@@ -24,6 +24,28 @@ local function create_throbber(ease_fn)
   end
 end
 
+--- @param percent number
+--- @return number
+--- @diagnostic disable-next-line
+local function linear(percent)
+  return percent
+end
+
+--- @param percent number
+--- @return number
+--- @diagnostic disable-next-line
+local function ease_in_ease_out_quadratic(percent)
+  if percent < 0.5 then
+    return 2 * percent * percent
+  else
+    local f = percent - 1
+    return 1 - 2 * f * f
+  end
+end
+
+--- @param percent number
+--- @return number
+--- @diagnostic disable-next-line
 local function ease_in_ease_out_cubic(percent)
   if percent < 0.5 then
     return 4 * percent * percent * percent
@@ -53,7 +75,7 @@ function Throbber.new(cb)
     start_time = 0,
     section_time = 0,
     cb = cb,
-    throb_fn = create_throbber(ease_in_ease_out_cubic),
+    throb_fn = create_throbber(linear),
   }, Throbber)
 end
 

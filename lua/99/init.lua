@@ -126,6 +126,7 @@ end
 --- @field __view_log_idx number
 --- @field __request_history _99.RequestEntry[]
 --- @field __request_by_id table<number, _99.RequestEntry>
+--- @field __active_marks _99.Mark[]
 local _99_State = {}
 _99_State.__index = _99_State
 
@@ -225,6 +226,11 @@ function _99_State:add_active_request(clean_up, request_id, name)
     name = name,
   }
   return _active_request_id
+end
+
+--- @param mark _99.Mark
+function _99_State:add_mark(mark)
+  table.insert(self.__active_marks, mark)
 end
 
 function _99_State:active_request_count()
@@ -419,6 +425,13 @@ function _99.stop_all_requests()
   _99_state.__active_requests = {}
 end
 
+function _99.clear_all_marks()
+  for _, mark in ipairs(_99_state.__active_marks or {}) do
+    mark:delete()
+  end
+  _99_state.__active_marks = {}
+end
+
 function _99.previous_requests_to_qfix()
   local items = {}
   for _, entry in ipairs(_99_state.__request_history) do
@@ -589,5 +602,3 @@ end
 
 _99.Providers = Providers
 return _99
-
-

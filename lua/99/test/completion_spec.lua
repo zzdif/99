@@ -1,5 +1,6 @@
 -- luacheck: globals describe it assert before_each, ignore 121/require
-local base = require("99.extensions.completion.base")
+local Agents = require("99.extensions.agents")
+local Completions = require("99.extensions.completions")
 local eq = assert.are.same
 
 local function clear_cache()
@@ -7,7 +8,7 @@ local function clear_cache()
   package.loaded["99.extensions.init"] = nil
   package.loaded["99.extensions.completion.cmp"] = nil
   package.loaded["99.extensions.completion.blink"] = nil
-  package.loaded["99.extensions.completion.base"] = nil
+  Completions._reset()
 end
 
 --- @param fn function
@@ -47,6 +48,12 @@ local function mock_state()
     },
   })
   return _99.__get_state()
+end
+
+--- Register completion providers from a state (simulates what init() does)
+local function register_providers(state)
+  Completions._reset()
+  Completions.register(Agents.completion_provider(state))
 end
 
 describe("completion: setup", function()
@@ -93,59 +100,48 @@ describe("completion: setup", function()
   end)
 end)
 
-describe("completion: base", function()
-  it("builds items from rules", function()
+describe("completion: completions provider", function()
+  it("registers and returns trigger characters", function()
     local state = mock_state()
-    local items = base.build_items(state)
+    register_providers(state)
 
-    assert(#items > 0, "should have items")
+    local triggers = Completions.get_trigger_characters()
+    assert(#triggers > 0, "should have triggers")
+    assert(
+      vim.tbl_contains(triggers, "#"),
+      "should contain # trigger for rules"
+    )
+  end)
+
+  it("returns completions for registered trigger", function()
+    local state = mock_state()
+    register_providers(state)
+
+    local items = Completions.get_completions("#")
+    assert(#items > 0, "should have items for # trigger")
     for _, item in ipairs(items) do
-      assert(item.rule, "item should have rule")
-      assert(item.rule.name, "rule should have name")
-      assert(item.rule.path, "rule should have path")
-      assert(type(item.docs) == "string", "item should have docs string")
+      assert(item.label, "item should have label")
+      assert(item.insertText, "item should have insertText")
     end
   end)
 
-  it("converts items to LSP format", function()
-    local state = mock_state()
-    local items = base.build_items(state)
-    local lsp_items = base.to_lsp_items(items)
-
-    eq(#items, #lsp_items)
-    for i, lsp_item in ipairs(lsp_items) do
-      local original = items[i]
-      eq(original.rule.name, lsp_item.label)
-      eq(original.rule.name, lsp_item.insertText)
-      eq("@" .. original.rule.name, lsp_item.filterText)
-      eq(17, lsp_item.kind)
-      eq("markdown", lsp_item.documentation.kind)
-      eq(original.rule.path, lsp_item.detail)
-    end
-  end)
-
-  it("accepts custom kind", function()
-    local state = mock_state()
-    local items = base.build_items(state)
-    local lsp_items = base.to_lsp_items(items, 6)
-
-    for _, lsp_item in ipairs(lsp_items) do
-      eq(6, lsp_item.kind)
-    end
+  it("returns empty for unregistered trigger", function()
+    Completions._reset()
+    local items = Completions.get_completions("?")
+    eq({}, items)
   end)
 
   it("handles empty rules", function()
+    Completions._reset()
     local empty_state = {
       rules = { custom = {} },
       completion = { custom_rules = {} },
     }
-    empty_state.rules = require("99.extensions.agents").rules(empty_state)
+    empty_state.rules = Agents.rules(empty_state)
 
-    local items = base.build_items(empty_state)
+    Completions.register(Agents.completion_provider(empty_state))
+    local items = Completions.get_completions("#")
     eq({}, items)
-
-    local lsp_items = base.to_lsp_items(items)
-    eq({}, lsp_items)
   end)
 end)
 
@@ -173,36 +169,34 @@ describe("completion: blink adapter", function()
     assert(source.get_completions, "source should have get_completions")
   end)
 
-  it("returns @ as trigger character", function()
+  it("returns trigger characters from providers", function()
     local blink = require("99.extensions.completion.blink")
-    mock_state()
+    local state = mock_state()
+    register_providers(state)
 
     local source = blink.new()
     local triggers = source:get_trigger_characters()
-    eq({ "@" }, triggers)
+    assert(#triggers > 0, "should have trigger characters")
+    assert(
+      vim.tbl_contains(triggers, "#"),
+      "should contain # trigger for rules"
+    )
   end)
 
-  it("calls callback with items", function()
-    package.loaded["blink.cmp.types"] = {
-      CompletionItemKind = {
-        File = 17,
-      },
-    }
-
+  it("calls callback with items for matching trigger", function()
     local blink = require("99.extensions.completion.blink")
-    mock_state()
+    local state = mock_state()
+    register_providers(state)
 
     local source = blink.new()
     local result = nil
 
     source:get_completions({
-      line = "@custom_rule_1",
+      line = "#custom_rule_1",
       cursor = { 1, 16 },
     }, function(r)
       result = r
     end)
-
-    package.loaded["blink.cmp.types"] = nil
 
     assert(result, "callback should be called")
     assert(result.items, "result should have items")

@@ -1,8 +1,9 @@
 -- luacheck: no self
-local base = require("99.extensions.completion.base")
+local Agents = require("99.extensions.agents")
+local Files = require("99.extensions.files")
+local Completions = require("99.extensions.completions")
 
 --- @class BlinkSource
---- @field items _99.Extensions.CompletionItem[] | nil
 local BlinkSource = {}
 BlinkSource.__index = BlinkSource
 
@@ -12,33 +13,38 @@ function BlinkSource.new()
 end
 
 function BlinkSource:get_keyword_pattern()
-  return [[@\k\+]]
+  return Completions.get_keyword_pattern()
 end
 
 function BlinkSource:enabled()
-  return vim.bo.filetype == "99"
+  return vim.bo.filetype == "99prompt"
 end
 
 function BlinkSource:get_trigger_characters()
-  return { "@" }
-end
-
--- pattern was taken from `blink-emoji` to mimic the trigger behavior
-local function is_at_mention(line)
-  local pattern = [[\%([[:space:]"'`]\|^\)\zs@[[:alnum:]_]*$]]
-  return vim.regex(pattern):match_str(line) ~= nil
+  return Completions.get_trigger_characters()
 end
 
 --- @param ctx table blink.cmp context
 --- @param callback fun(result: table): nil
 function BlinkSource:get_completions(ctx, callback)
-  local cursor_before = ctx.line:sub(1, ctx.cursor[2])
-  if not is_at_mention(cursor_before) then
+  local before = ctx.line:sub(1, ctx.cursor[2])
+
+  -- Find which trigger is active
+  local trigger = nil
+  for _, char in ipairs(Completions.get_trigger_characters()) do
+    local pattern = char:gsub("([%%%^%$%(%)%.%[%]%*%+%-%?])", "%%%1") .. "%S*$"
+    if before:match(pattern) then
+      trigger = char
+      break
+    end
+  end
+
+  if not trigger then
     ---@diagnostic disable-next-line: missing-parameter
     return callback()
   end
-  local kind = require("blink.cmp.types").CompletionItemKind.File
-  local items = base.to_lsp_items(self.items or {}, kind)
+
+  local items = Completions.get_completions(trigger)
 
   callback({
     items = items,
@@ -51,24 +57,49 @@ end
 local source = nil
 
 --- @param _99 _99.State
+local function register_providers(_99)
+  Completions.register(Agents.completion_provider(_99))
+  Completions.register(Files.completion_provider())
+end
+
+--- @param _99 _99.State
 local function init(_99)
+  -- Collect rule directories to exclude from file search
+  local rule_dirs = {}
+  if _99.completion then
+    if _99.completion.custom_rules then
+      for _, dir in ipairs(_99.completion.custom_rules) do
+        table.insert(rule_dirs, dir)
+      end
+    end
+  end
+
+  if _99.completion and _99.completion.files then
+    Files.setup(_99.completion.files, rule_dirs)
+  else
+    Files.setup({ enabled = true }, rule_dirs)
+  end
+
+  register_providers(_99)
+
   if source then
-    source.items = base.build_items(_99)
     return
   end
   source = BlinkSource.new()
-  source.items = base.build_items(_99)
 end
 
 --- @param _ _99.State
-local function init_for_buffer(_) end -- blink is setup globally
+local function init_for_buffer(_)
+  local buf = vim.api.nvim_get_current_buf()
+  vim.bo[buf].filetype = "99prompt"
+end
 
 --- @param _99 _99.State
 local function refresh_state(_99)
   if not source then
     return
   end
-  source.items = base.build_items(_99)
+  register_providers(_99)
 end
 
 --- @param _ table | nil

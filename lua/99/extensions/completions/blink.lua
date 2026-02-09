@@ -2,11 +2,13 @@
 local Completions = require("99.extensions.completions")
 
 --- @class BlinkSource
+--- @field _99 _99.State | nil
 local BlinkSource = {}
 BlinkSource.__index = BlinkSource
 
-function BlinkSource.new()
-  return setmetatable({}, { __index = BlinkSource })
+--- @param _99 _99.State | nil
+function BlinkSource.new(_99)
+  return setmetatable({ _99 = _99 }, { __index = BlinkSource })
 end
 
 function BlinkSource:get_keyword_pattern()
@@ -44,31 +46,32 @@ end
 --- @type BlinkSource | nil
 local source = nil
 
---- @param _ _99.State
-local function init(_)
-  if source then
-    return
-  end
-  source = BlinkSource.new()
-end
+--- @type _99.State | nil
+local state = nil
 
---- @param _ _99.State
-local function init_for_buffer(_)
-  local buf = vim.api.nvim_get_current_buf()
-  vim.bo[buf].filetype = "99prompt"
-end
-
---- @param _ _99.State
-local function refresh_state(_) end
-
+--- blink.cmp calls this as a module factory; also used by init().
 --- @param _ table | nil
 --- @return BlinkSource
 local function new(_)
   if source then
     return source
   end
-  source = BlinkSource.new()
+  source = BlinkSource.new(state)
   return source
+end
+
+--- @param _99 _99.State
+local function init(_99)
+  state = _99
+  new()
+end
+
+--- @param _ _99.State
+local function init_for_buffer(_) end
+
+--- @param _99 _99.State
+local function refresh_state(_99)
+  state = _99
 end
 
 --- @type _99.Extensions.Source

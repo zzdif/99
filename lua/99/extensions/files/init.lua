@@ -245,10 +245,8 @@ function M.setup(opts, rule_dirs)
     end
   end
 
-  -- Add rule directories to exclude list
   if rule_dirs then
     for _, dir in ipairs(rule_dirs) do
-      -- Normalize the directory path (remove trailing slash, get basename for relative paths)
       local normalized = dir:gsub("/$", ""):gsub("^%./", "")
       table.insert(config.exclude, normalized)
     end

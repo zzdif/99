@@ -1,4 +1,6 @@
+local Agents = require("99.extensions.agents")
 local Files = require("99.extensions.files")
+local Completions = require("99.extensions.completions")
 
 --- @class _99.Extensions.Source
 --- @field dependency string? external module that must be loadable
@@ -21,7 +23,7 @@ local function get_source(name)
     return cached or nil
   end
 
-  local ok, source = pcall(require, "99.extensions.completion." .. name)
+  local ok, source = pcall(require, "99.extensions.completions." .. name)
   if not ok then
     vim.notify(
       string.format("99: completion.source '%s' is not available", name),
@@ -50,6 +52,25 @@ local function get_source(name)
   return source
 end
 
+--- @param _99 _99.State
+local function setup_providers(_99)
+  local rule_dirs = {}
+  if _99.completion and _99.completion.custom_rules then
+    for _, dir in ipairs(_99.completion.custom_rules) do
+      table.insert(rule_dirs, dir)
+    end
+  end
+
+  if _99.completion and _99.completion.files then
+    Files.setup(_99.completion.files, rule_dirs)
+  else
+    Files.setup({ enabled = true }, rule_dirs)
+  end
+
+  Completions.register(Agents.completion_provider(_99))
+  Completions.register(Files.completion_provider())
+end
+
 return {
   --- @param _99 _99.State
   init = function(_99)
@@ -63,6 +84,8 @@ return {
       _99.completion.source = nil
       return
     end
+
+    setup_providers(_99)
 
     local ok, err = pcall(source.init, _99)
     if not ok then
@@ -96,6 +119,7 @@ return {
     if not source then
       return
     end
+    setup_providers(_99)
     source.refresh_state(_99)
   end,
 }

@@ -6,8 +6,8 @@ local eq = assert.are.same
 local function clear_cache()
   package.loaded["99"] = nil
   package.loaded["99.extensions.init"] = nil
-  package.loaded["99.extensions.completion.cmp"] = nil
-  package.loaded["99.extensions.completion.blink"] = nil
+  package.loaded["99.extensions.completions.cmp"] = nil
+  package.loaded["99.extensions.completions.blink"] = nil
   Completions._reset()
 end
 
@@ -147,7 +147,7 @@ end)
 
 describe("completion: blink adapter", function()
   it("loads without error", function()
-    local ok, blink = pcall(require, "99.extensions.completion.blink")
+    local ok, blink = pcall(require, "99.extensions.completions.blink")
     assert(ok, "blink module should load: " .. tostring(blink))
     assert(blink.init, "should have init")
     assert(blink.init_for_buffer, "should have init_for_buffer")
@@ -156,7 +156,7 @@ describe("completion: blink adapter", function()
   end)
 
   it("creates source via new()", function()
-    local blink = require("99.extensions.completion.blink")
+    local blink = require("99.extensions.completions.blink")
     mock_state()
 
     local source = blink.new()
@@ -170,7 +170,7 @@ describe("completion: blink adapter", function()
   end)
 
   it("returns trigger characters from providers", function()
-    local blink = require("99.extensions.completion.blink")
+    local blink = require("99.extensions.completions.blink")
     local state = mock_state()
     register_providers(state)
 
@@ -184,7 +184,7 @@ describe("completion: blink adapter", function()
   end)
 
   it("calls callback with items for matching trigger", function()
-    local blink = require("99.extensions.completion.blink")
+    local blink = require("99.extensions.completions.blink")
     local state = mock_state()
     register_providers(state)
 
@@ -208,7 +208,7 @@ end)
 
 describe("completion: cmp adapter", function()
   it("loads without error", function()
-    local ok, cmp_source = pcall(require, "99.extensions.completion.cmp")
+    local ok, cmp_source = pcall(require, "99.extensions.completions.cmp")
     assert(ok, "cmp module should load: " .. tostring(cmp_source))
     assert(cmp_source.init, "should have init")
     assert(cmp_source.init_for_buffer, "should have init_for_buffer")
@@ -218,8 +218,8 @@ end)
 
 describe("completion: registry", function()
   it("loads sources by convention", function()
-    local ok_blink = pcall(require, "99.extensions.completion.blink")
-    local ok_cmp = pcall(require, "99.extensions.completion.cmp")
+    local ok_blink = pcall(require, "99.extensions.completions.blink")
+    local ok_cmp = pcall(require, "99.extensions.completions.cmp")
 
     assert(ok_blink, "blink source should be loadable")
     assert(ok_cmp, "cmp source should be loadable")

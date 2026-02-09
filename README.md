@@ -157,7 +157,7 @@ require("blink.cmp").setup({
     default = { "lsp", "path", "snippets", "buffer", "99" },
     providers = {
       ["99"] = {
-        module = "99.extensions.completion.blink",
+        module = "99.extensions.completions.blink",
         name = "99",
       },
     },

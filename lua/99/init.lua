@@ -55,6 +55,7 @@ end
 --- @class _99.ActiveRequest
 --- @field clean_up _99.Cleanup
 --- @field request_id number
+--- @field name string
 
 --- @class _99.StateProps
 --- @field model string
@@ -213,13 +214,15 @@ end
 local _active_request_id = 0
 ---@param clean_up _99.Cleanup
 ---@param request_id number
+---@param name string
 ---@return number
-function _99_State:add_active_request(clean_up, request_id)
+function _99_State:add_active_request(clean_up, request_id, name)
   _active_request_id = _active_request_id + 1
   Logger:debug("adding active request", "id", _active_request_id)
   self.__active_requests[_active_request_id] = {
     clean_up = clean_up,
     request_id = request_id,
+    name = name,
   }
   return _active_request_id
 end
@@ -467,9 +470,15 @@ local function show_in_flight_requests()
         return shut_down_in_flight_requests_window()
       end
 
-      vim.api.nvim_buf_set_lines(win.buf_id, 0, 1, {
-        throb .. " " .. tostring(count),
-      })
+      local lines = {
+        throb .. " requests(" .. tostring(count) .. ") " .. throb,
+      }
+      for _, r in pairs(_99_state.__active_requests) do
+        table.insert(lines, r.name)
+      end
+
+            Window.vertical_resize(win, #lines)
+      vim.api.nvim_buf_set_lines(win.buf_id, 0, 1, lines)
     end)
   end
 

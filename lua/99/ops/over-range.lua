@@ -37,7 +37,7 @@ local function over_range(context, range, opts)
     top_mark
   )
   local bottom_status = RequestStatus.new(250, 1, "Implementing", bottom_mark)
-  local clean_up = make_clean_up(context, function()
+  local clean_up = make_clean_up(context, "Visual", function()
     top_status:stop()
     bottom_status:stop()
     context:clear_marks()

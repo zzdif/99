@@ -27,7 +27,7 @@ local function search(context, opts)
   --   "Implementing",
   --   top_mark
   -- )
-  local clean_up = make_clean_up(context, function()
+  local clean_up = make_clean_up(context, "Search", function()
     request:cancel()
   end)
 

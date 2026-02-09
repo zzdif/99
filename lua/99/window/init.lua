@@ -440,9 +440,38 @@ function M.status_window()
   return window
 end
 
+--- @param win _99.window.Window
+--- @param height number
+function M.vertical_resize(win, height)
+  if win.config.height == height then
+    return
+  end
+  assert(M.is_active_window(win), "you cannot pass in an inactive window")
+  win.config.height = height
+  vim.api.nvim_win_set_config(win.win_id, {
+    relative = "editor",
+    width = win.config.width,
+    height = height,
+    row = win.config.row or 0,
+    col = win.config.col or 0,
+    anchor = win.config.anchor,
+  })
+end
+
 --- @return boolean
 function M.has_active_windows()
   return #M.active_windows > 0
+end
+
+--- @param win _99.window.Window
+--- @return boolean
+function M.is_active_window(win)
+  for _, active_win in ipairs(M.active_windows) do
+    if active_win.win_id == win.win_id then
+      return true
+    end
+  end
+  return false
 end
 
 return M
